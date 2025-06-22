@@ -1,10 +1,1098 @@
 <!DOCTYPE html>
-<html>
+<html lang="ja">
 <head>
-    <title>株式決算データダッシュボード</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>株式決算データ ダッシュボード</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ログイン画面 */
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #667eea;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+            margin-bottom: 20px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .demo-section {
+            text-align: center;
+            padding: 20px 0;
+            border-top: 1px solid #e1e5e9;
+            margin-top: 20px;
+        }
+
+        .demo-btn {
+            background: #f8f9fa;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .demo-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .error-message {
+            background: #ff6b6b;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        .success-message {
+            background: #51cf66;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            display: none;
+        }
+
+        /* ダッシュボード画面 */
+        .dashboard {
+            display: none;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .control-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .controls input, .controls select {
+            padding: 10px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .controls input:focus, .controls select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .controls label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            display: block;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .data-grid {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        tr:hover {
+            background-color: rgba(102, 126, 234, 0.05);
+        }
+
+        .positive {
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .negative {
+            color: #e74c3c;
+            font-weight: 600;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .demo-banner {
+            background: linear-gradient(135deg, #ffa500 0%, #ff6347 100%);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .control-group {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+    </style>
 </head>
 <body>
-    <h1>準備中...</h1>
-    <p>ダッシュボードを構築中です。</p>
+    <!-- ログイン画面 -->
+    <div id="loginScreen" class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>📈 株式決算データ</h1>
+                <p>ダッシュボードにログインしてください</p>
+            </div>
+
+            <div id="errorMessage" class="error-message"></div>
+            <div id="successMessage" class="success-message"></div>
+
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="email">メールアドレス</label>
+                    <input type="email" id="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">パスワード</label>
+                    <input type="password" id="password" required>
+                </div>
+                <button type="submit" id="loginBtn" class="login-btn">
+                    ログイン
+                </button>
+            </form>
+
+            <div class="demo-section">
+                <p style="margin-bottom: 15px; color: #666; font-size: 0.9rem;">
+                    デモ版をお試しいただけます
+                </p>
+                <button id="demoBtn" class="demo-btn">
+                    デモ版でログイン
+                </button>
+                <div style="margin-top: 10px; font-size: 0.8rem; color: #999;">
+                    デモ版では限定されたデータのみ表示されます
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ダッシュボード画面 -->
+    <div id="dashboard" class="dashboard">
+        <div class="container">
+            <div class="header">
+                <h1>📈 株式決算データ ダッシュボード</h1>
+                <div class="user-info">
+                    <span id="userBadge" class="user-badge"></span>
+                    <button id="logoutBtn" class="logout-btn">ログアウト</button>
+                </div>
+            </div>
+
+            <div id="demoBanner" class="demo-banner" style="display: none;">
+                🔍 デモ版: 2024年12月1日の決算データのみ表示中（機能制限あり）
+            </div>
+
+            <div class="controls">
+                <div class="control-group">
+                    <div class="form-group">
+                        <label for="stockCode">銘柄コード</label>
+                        <input type="text" id="stockCode" placeholder="例: 7203">
+                    </div>
+                    <div class="form-group">
+                        <label for="dateFrom">開始日</label>
+                        <input type="date" id="dateFrom">
+                    </div>
+                    <div class="form-group">
+                        <label for="dateTo">終了日</label>
+                        <input type="date" id="dateTo">
+                    </div>
+                    <div class="form-group">
+                        <label for="sortBy">ソート</label>
+                        <select id="sortBy">
+                            <option value="earningsDate">決算日</option>
+                            <option value="changeRate">変化率</option>
+                            <option value="marketCap">時価総額</option>
+                            <option value="stockCode">銘柄コード</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="text-align: center;">
+                    <button onclick="loadData()" class="btn">データ取得</button>
+                    <button onclick="exportToCSV()" id="exportBtn" class="btn" disabled>CSV出力</button>
+                </div>
+            </div>
+
+            <div class="stats" id="statsContainer" style="display: none;">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalCount">0</div>
+                    <div class="stat-label">総件数</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgChangeRate">0%</div>
+                    <div class="stat-label">平均変化率</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="positiveCount">0</div>
+                    <div class="stat-label">上昇銘柄</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="avgPER">0</div>
+                    <div class="stat-label">平均PER</div>
+                </div>
+            </div>
+
+            <div id="loadingDiv" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>データを取得中...</p>
+            </div>
+
+            <div class="data-grid" id="dataGrid" style="display: none;">
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>銘柄コード</th>
+                                <th>銘柄名</th>
+                                <th>市場</th>
+                                <th>業種</th>
+                                <th>決算日</th>
+                                <th>変化率</th>
+                                <th>時価総額(億円)</th>
+                                <th>PER(前)</th>
+                                <th>PER(後)</th>
+                                <th>PER(3年平均)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 認証状態管理
+        const AuthState = {
+            isAuthenticated: false,
+            user: null,
+            userType: null, // 'regular' or 'demo'
+            token: null
+        };
+
+        // アプリケーション状態
+        const AppState = {
+            data: [],
+            filteredData: [],
+            isLoading: false,
+            error: null
+        };
+
+        // 設定
+        const CONFIG = {
+            // 後でCognito設定に置き換え
+            COGNITO_USER_POOL_ID: 'your-user-pool-id',
+            COGNITO_CLIENT_ID: 'your-client-id',
+            API_ENDPOINT: 'https://your-api-gateway-url.amazonaws.com/prod',
+            DEMO_DATA_DATE: '2024-12-01'
+        };
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+        });
+
+        function initializeApp() {
+            // セッション復元チェック
+            const savedAuth = localStorage.getItem('authState');
+            if (savedAuth) {
+                try {
+                    const authData = JSON.parse(savedAuth);
+                    if (authData.token && isTokenValid(authData.token)) {
+                        AuthState.isAuthenticated = true;
+                        AuthState.user = authData.user;
+                        AuthState.userType = authData.userType;
+                        AuthState.token = authData.token;
+                        showDashboard();
+                        return;
+                    }
+                } catch (e) {
+                    localStorage.removeItem('authState');
+                }
+            }
+            
+            showLoginScreen();
+        }
+
+        function setupEventListeners() {
+            // ログインフォーム
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            
+            // デモログインボタン
+            document.getElementById('demoBtn').addEventListener('click', handleDemoLogin);
+            
+            // ログアウトボタン
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            if (!email || !password) {
+                showError('メールアドレスとパスワードを入力してください');
+                return;
+            }
+
+            setLoginLoading(true);
+            clearMessages();
+
+            try {
+                // TODO: Cognito認証に置き換え
+                const result = await authenticateUser(email, password);
+                
+                if (result.success) {
+                    AuthState.isAuthenticated = true;
+                    AuthState.user = result.user;
+                    AuthState.userType = 'regular';
+                    AuthState.token = result.token;
+                    
+                    // セッション保存
+                    saveAuthState();
+                    
+                    showSuccess('ログインしました');
+                    setTimeout(() => {
+                        showDashboard();
+                    }, 1000);
+                } else {
+                    showError(result.message || 'ログインに失敗しました');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('ログイン処理中にエラーが発生しました');
+            } finally {
+                setLoginLoading(false);
+            }
+        }
+
+        function handleDemoLogin() {
+            clearMessages();
+            setLoginLoading(true);
+            
+            // デモユーザーとしてログイン
+            setTimeout(() => {
+                AuthState.isAuthenticated = true;
+                AuthState.user = { email: 'demo@example.com', name: 'デモユーザー' };
+                AuthState.userType = 'demo';
+                AuthState.token = 'demo-token';
+                
+                showSuccess('デモ版にログインしました');
+                setTimeout(() => {
+                    showDashboard();
+                    setLoginLoading(false);
+                }, 1000);
+            }, 1000);
+        }
+
+        function handleLogout() {
+            AuthState.isAuthenticated = false;
+            AuthState.user = null;
+            AuthState.userType = null;
+            AuthState.token = null;
+            
+            localStorage.removeItem('authState');
+            showLoginScreen();
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('dashboard').style.display = 'none';
+            clearMessages();
+        }
+
+        function showDashboard() {
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('dashboard').style.display = 'block';
+            
+            // ユーザー情報表示
+            const userBadge = document.getElementById('userBadge');
+            if (AuthState.userType === 'demo') {
+                userBadge.textContent = '👤 デモユーザー';
+                document.getElementById('demoBanner').style.display = 'block';
+                // デモ版では日付入力を無効化
+                document.getElementById('dateFrom').disabled = true;
+                document.getElementById('dateTo').disabled = true;
+                document.getElementById('exportBtn').style.display = 'none';
+            } else {
+                userBadge.textContent = `👤 ${AuthState.user.email}`;
+                document.getElementById('demoBanner').style.display = 'none';
+                initializeDateInputs();
+            }
+            
+            // デモデータロード
+            if (AuthState.userType === 'demo') {
+                loadDemoData();
+            }
+        }
+
+        // 認証関数（後でCognito実装に置き換え）
+        async function authenticateUser(email, password) {
+            // モックAPI - 実際はCognito認証
+            return new Promise((resolve) => {
+                setTimeout(() => {
+                    // 簡単な認証シミュレーション
+                    if (email.includes('@') && password.length >= 6) {
+                        resolve({
+                            success: true,
+                            user: { email, name: email.split('@')[0] },
+                            token: 'mock-jwt-token-' + Date.now()
+                        });
+                    } else {
+                        resolve({
+                            success: false,
+                            message: 'メールアドレスまたはパスワードが正しくありません'
+                        });
+                    }
+                }, 1500);
+            });
+        }
+
+        function isTokenValid(token) {
+            // 簡単なトークン検証（実際はJWT検証）
+            return token && token.startsWith('mock-jwt-token-');
+        }
+
+        function saveAuthState() {
+            const authData = {
+                user: AuthState.user,
+                userType: AuthState.userType,
+                token: AuthState.token,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('authState', JSON.stringify(authData));
+        }
+
+        // データ関連の関数は前回と同様
+        async function loadData() {
+            if (!AuthState.isAuthenticated) {
+                showError('認証が必要です');
+                return;
+            }
+
+            try {
+                setLoading(true);
+                clearError();
+
+                const filters = getFilters();
+                let data;
+
+                if (AuthState.userType === 'demo') {
+                    data = generateDemoData();
+                } else {
+                    // 実際のAPI呼び出し
+                    data = await fetchFromAPI(filters);
+                }
+                
+                AppState.data = data;
+                AppState.filteredData = applyFiltersAndSort(data, filters);
+                
+                displayData(AppState.filteredData);
+                displayStats(AppState.filteredData);
+                
+                if (AuthState.userType !== 'demo') {
+                    document.getElementById('exportBtn').disabled = false;
+                }
+                
+            } catch (error) {
+                showError('データの取得に失敗しました: ' + error.message);
+                console.error('Data loading error:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        function initializeDateInputs() {
+            const today = new Date();
+            const oneMonthAgo = new Date(today.getFullYear(), today.getMonth() - 1, today.getDate());
+            
+            document.getElementById('dateFrom').value = oneMonthAgo.toISOString().split('T')[0];
+            document.getElementById('dateTo').value = today.toISOString().split('T')[0];
+        }
+
+        function getFilters() {
+            return {
+                stockCode: document.getElementById('stockCode').value.trim(),
+                dateFrom: document.getElementById('dateFrom').value,
+                dateTo: document.getElementById('dateTo').value,
+                sortBy: document.getElementById('sortBy').value
+            };
+        }
+
+        async function fetchFromAPI(filters) {
+            const queryParams = new URLSearchParams();
+            
+            if (filters.stockCode) queryParams.append('stockCode', filters.stockCode);
+            if (filters.dateFrom) queryParams.append('dateFrom', filters.dateFrom);
+            if (filters.dateTo) queryParams.append('dateTo', filters.dateTo);
+            
+            const response = await fetch(`${CONFIG.API_ENDPOINT}/stock-earnings?${queryParams.toString()}`, {
+                headers: {
+                    'Authorization': `Bearer ${AuthState.token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const result = await response.json();
+            return result.data || [];
+        }
+
+        function applyFiltersAndSort(data, filters) {
+            let filtered = [...data];
+            
+            // デモユーザーは特定日のデータのみ
+            if (AuthState.userType === 'demo') {
+                filtered = filtered.filter(item => 
+                    item.earningsDate === CONFIG.DEMO_DATA_DATE
+                );
+            }
+            
+            // 銘柄コードフィルター
+            if (filters.stockCode) {
+                filtered = filtered.filter(item => 
+                    item.stockCode.includes(filters.stockCode.toUpperCase())
+                );
+            }
+            
+            // 正規ユーザーの日付範囲フィルター
+            if (AuthState.userType === 'regular') {
+                if (filters.dateFrom) {
+                    filtered = filtered.filter(item => 
+                        new Date(item.earningsDate) >= new Date(filters.dateFrom)
+                    );
+                }
+                
+                if (filters.dateTo) {
+                    filtered = filtered.filter(item => 
+                        new Date(item.earningsDate) <= new Date(filters.dateTo)
+                    );
+                }
+            }
+            
+            // ソート
+            filtered.sort((a, b) => {
+                switch (filters.sortBy) {
+                    case 'earningsDate':
+                        return new Date(b.earningsDate) - new Date(a.earningsDate);
+                    case 'changeRate':
+                        return parseFloat(b.changeRate) - parseFloat(a.changeRate);
+                    case 'marketCap':
+                        return b.marketCap - a.marketCap;
+                    case 'stockCode':
+                        return a.stockCode.localeCompare(b.stockCode);
+                    default:
+                        return 0;
+                }
+            });
+            
+            return filtered;
+        }
+
+        function displayData(data) {
+            const tableBody = document.getElementById('dataTableBody');
+            tableBody.innerHTML = '';
+            
+            data.forEach(item => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.stockCode}</td>
+                    <td>${item.stockName}</td>
+                    <td>${item.market}</td>
+                    <td>${item.industry}</td>
+                    <td>${formatDate(item.earningsDate)}</td>
+                    <td class="${parseFloat(item.changeRate) >= 0 ? 'positive' : 'negative'}">
+                        ${formatPercentage(item.changeRate)}
+                    </td>
+                    <td>${formatNumber(item.marketCap / 100000000)}</td>
+                    <td>${formatNumber(item.perBefore)}</td>
+                    <td>${formatNumber(item.perAfter)}</td>
+                    <td>${formatNumber(item.per3YearAverage)}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+            
+            document.getElementById('dataGrid').style.display = 'block';
+        }
+
+        function displayStats(data) {
+            if (data.length === 0) {
+                document.getElementById('statsContainer').style.display = 'none';
+                return;
+            }
+            
+            const totalCount = data.length;
+            const positiveCount = data.filter(item => parseFloat(item.changeRate) >= 0).length;
+            const avgChangeRate = data.reduce((sum, item) => sum + parseFloat(item.changeRate), 0) / totalCount;
+            const avgPER = data.reduce((sum, item) => sum + item.perAfter, 0) / totalCount;
+            
+            document.getElementById('totalCount').textContent = totalCount.toLocaleString();
+            document.getElementById('positiveCount').textContent = positiveCount.toLocaleString();
+            document.getElementById('avgChangeRate').textContent = formatPercentage(avgChangeRate);
+            document.getElementById('avgPER').textContent = formatNumber(avgPER);
+            
+            document.getElementById('statsContainer').style.display = 'grid';
+        }
+
+        function exportToCSV() {
+            if (AuthState.userType === 'demo') {
+                showError('デモ版ではCSV出力は利用できません');
+                return;
+            }
+            
+            if (AppState.filteredData.length === 0) {
+                showError('出力するデータがありません');
+                return;
+            }
+            
+            const headers = ['銘柄コード', '銘柄名', '市場', '業種', '決算日', '変化率', '時価総額', 'PER前', 'PER後', 'PER3年平均'];
+            const csvContent = [
+                headers.join(','),
+                ...AppState.filteredData.map(item => [
+                    item.stockCode,
+                    `"${item.stockName}"`,
+                    item.market,
+                    `"${item.industry}"`,
+                    item.earningsDate,
+                    item.changeRate,
+                    item.marketCap,
+                    item.perBefore,
+                    item.perAfter,
+                    item.per3YearAverage
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `stock_earnings_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
+
+        // ユーティリティ関数
+        function formatDate(dateString) {
+            return new Date(dateString).toLocaleDateString('ja-JP');
+        }
+
+        function formatPercentage(value) {
+            return `${parseFloat(value).toFixed(2)}%`;
+        }
+
+        function formatNumber(value) {
+            return parseFloat(value).toFixed(2);
+        }
+
+        function setLoading(isLoading) {
+            AppState.isLoading = isLoading;
+            document.getElementById('loadingDiv').style.display = isLoading ? 'block' : 'none';
+        }
+
+        function setLoginLoading(isLoading) {
+            const loginBtn = document.getElementById('loginBtn');
+            const demoBtn = document.getElementById('demoBtn');
+            
+            if (isLoading) {
+                loginBtn.disabled = true;
+                loginBtn.textContent = 'ログイン中...';
+                demoBtn.disabled = true;
+            } else {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'ログイン';
+                demoBtn.disabled = false;
+            }
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            // 5秒後に自動で消す
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+            
+            // 3秒後に自動で消す
+            setTimeout(() => {
+                successDiv.style.display = 'none';
+            }, 3000);
+        }
+
+        function clearMessages() {
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+        }
+
+        function clearError() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // デモデータ生成
+        function generateDemoData() {
+            const companies = [
+                { code: '7203', name: 'トヨタ自動車', market: '東証プライム', industry: '輸送用機器' },
+                { code: '9984', name: 'ソフトバンクグループ', market: '東証プライム', industry: '情報・通信業' },
+                { code: '6758', name: 'ソニーグループ', market: '東証プライム', industry: '電気機器' },
+                { code: '8306', name: '三菱UFJフィナンシャル・グループ', market: '東証プライム', industry: '銀行業' },
+                { code: '6501', name: '日立製作所', market: '東証プライム', industry: '電気機器' },
+                { code: '7974', name: '任天堂', market: '東証プライム', industry: 'その他製品' },
+                { code: '4689', name: 'Zホールディングス', market: '東証プライム', industry: '情報・通信業' },
+                { code: '6098', name: 'リクルートホールディングス', market: '東証プライム', industry: 'サービス業' }
+            ];
+            
+            const data = [];
+            
+            // デモ版は固定日（2024-12-01）のデータのみ
+            companies.forEach(company => {
+                data.push({
+                    stockCode: company.code,
+                    stockName: company.name,
+                    market: company.market,
+                    industry: company.industry,
+                    earningsDate: CONFIG.DEMO_DATA_DATE,
+                    changeRate: (Math.random() * 20 - 10).toFixed(2),
+                    marketCap: Math.floor(Math.random() * 50000000000000 + 1000000000000),
+                    perBefore: (Math.random() * 30 + 5).toFixed(2),
+                    perAfter: (Math.random() * 30 + 5).toFixed(2),
+                    per3YearAverage: (Math.random() * 25 + 10).toFixed(2)
+                });
+            });
+            
+            return data;
+        }
+
+        // デモデータの自動ロード
+        function loadDemoData() {
+            AppState.data = generateDemoData();
+            AppState.filteredData = AppState.data;
+            displayData(AppState.filteredData);
+            displayStats(AppState.filteredData);
+        }
+
+        // パスワード表示/非表示切り替え（今後の機能拡張用）
+        function togglePasswordVisibility() {
+            const passwordInput = document.getElementById('password');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+        }
+
+        // Enter キーでのログイン
+        document.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !AuthState.isAuthenticated) {
+                const activeElement = document.activeElement;
+                if (activeElement.id === 'email' || activeElement.id === 'password') {
+                    document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+
+        // セッション期限チェック（定期実行）
+        setInterval(function() {
+            if (AuthState.isAuthenticated && AuthState.token) {
+                if (!isTokenValid(AuthState.token)) {
+                    handleLogout();
+                    showError('セッションが期限切れです。再度ログインしてください。');
+                }
+            }
+        }, 60000); // 1分ごとにチェック
+
+        // ページを離れる前の警告（データ入力中の場合）
+        window.addEventListener('beforeunload', function(e) {
+            if (AuthState.isAuthenticated && AppState.filteredData.length > 0) {
+                // データが表示されている場合は特に警告しない
+                // 必要に応じてここにロジックを追加
+            }
+        });
+
+        // ブラウザのページ表示/非表示での自動ログアウト機能
+        document.addEventListener('visibilitychange', function() {
+            if (document.hidden) {
+                // ページが非表示になった時刻を記録
+                if (AuthState.isAuthenticated) {
+                    localStorage.setItem('lastActiveTime', Date.now().toString());
+                }
+            } else {
+                // ページが表示された時に長時間経過していたらログアウト
+                if (AuthState.isAuthenticated) {
+                    const lastActive = localStorage.getItem('lastActiveTime');
+                    if (lastActive) {
+                        const elapsed = Date.now() - parseInt(lastActive);
+                        const maxInactiveTime = 8 * 60 * 60 * 1000; // 8時間
+                        
+                        if (elapsed > maxInactiveTime) {
+                            handleLogout();
+                            showError('長時間非アクティブだったため、自動ログアウトしました。');
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 </body>
 </html>
