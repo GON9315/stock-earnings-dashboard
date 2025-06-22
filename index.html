@@ -382,7 +382,7 @@
         }
     </style>
     <!-- AWS Amplify -->
-    <script src="https://unpkg.com/aws-amplify@5.3.11/dist/aws-amplify.min.js"></script>    
+    <script src="https://unpkg.com/aws-amplify@5/dist/aws-amplify.min.js"></script>    
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -519,16 +519,16 @@
     </div>
 
     <script>
-        // Amplifyの設定
-        window.aws_amplify.Amplify.configure({
-            Auth: {
-                region: CONFIG.COGNITO_REGION,
-                userPoolId: CONFIG.COGNITO_USER_POOL_ID,
-                userPoolWebClientId: CONFIG.COGNITO_CLIENT_ID,
-                mandatorySignIn: false,
-                authenticationFlowType: 'USER_SRP_AUTH'
-            }
-        });        
+        // 設定
+        const CONFIG = {
+            COGNITO_USER_POOL_ID: 'ap-northeast-1_tvKcWiOXJ',
+            COGNITO_CLIENT_ID: '5jb13rk3u5f9lr55mnj5m0c6d4',
+            COGNITO_REGION: 'ap-northeast-1',
+            COGNITO_DOMAIN: 'https://ap-northeast-1tvkcwioxj.auth.ap-northeast-1.amazoncognito.com',
+            API_ENDPOINT: 'https://your-api-gateway-url.amazonaws.com/prod', // 後で更新
+            DEMO_DATA_DATE: '2024-12-01'
+        };
+
         // 認証状態管理
         const AuthState = {
             isAuthenticated: false,
@@ -545,18 +545,23 @@
             error: null
         };
 
-        // 設定
-        const CONFIG = {
-            COGNITO_USER_POOL_ID: 'ap-northeast-1_tvKcWiOXJ',
-            COGNITO_CLIENT_ID: '5jb13rk3u5f9lr55mnj5m0c6d4',
-            COGNITO_REGION: 'ap-northeast-1',
-            COGNITO_DOMAIN: 'https://ap-northeast-1tvkcwioxj.auth.ap-northeast-1.amazoncognito.com',
-            API_ENDPOINT: 'https://your-api-gateway-url.amazonaws.com/prod', // 後で更新
-            DEMO_DATA_DATE: '2024-12-01'
-        };
-
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
+            // Amplifyの設定
+            if (window.aws_amplify && window.aws_amplify.Amplify) {
+                window.aws_amplify.Amplify.configure({
+                    Auth: {
+                        region: CONFIG.COGNITO_REGION,
+                        userPoolId: CONFIG.COGNITO_USER_POOL_ID,
+                        userPoolWebClientId: CONFIG.COGNITO_CLIENT_ID,
+                        mandatorySignIn: false,
+                        authenticationFlowType: 'USER_SRP_AUTH'
+                    }
+                });
+            } else {
+                console.error('AWS Amplify not loaded');
+            }
+            
             initializeApp();
             setupEventListeners();
         });
@@ -609,7 +614,6 @@
             clearMessages();
 
             try {
-                // TODO: Cognito認証に置き換え
                 const result = await authenticateUser(email, password);
                 
                 if (result.success) {
@@ -761,7 +765,7 @@
             localStorage.setItem('authState', JSON.stringify(authData));
         }
 
-        // データ関連の関数は前回と同様
+        // データ関連の関数
         async function loadData() {
             if (!AuthState.isAuthenticated) {
                 showError('認証が必要です');
