@@ -381,8 +381,6 @@
             }
         }
     </style>
-    <!-- AWS Amplify -->
-    <script src="https://unpkg.com/aws-amplify@5/dist/aws-amplify.min.js"></script>    
 </head>
 <body>
     <!-- ログイン画面 -->
@@ -518,6 +516,9 @@
         </div>
     </div>
 
+    <!-- AWS Cognito SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/amazon-cognito-identity-js/6.3.12/amazon-cognito-identity.min.js"></script>
+
     <script>
         // 設定
         const CONFIG = {
@@ -529,6 +530,9 @@
             DEMO_DATA_DATE: '2024-12-01'
         };
 
+        // Cognito設定
+        let cognitoUserPool;
+        
         // 認証状態管理
         const AuthState = {
             isAuthenticated: false,
@@ -547,20 +551,11 @@
 
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
-            // Amplifyの設定
-            if (window.aws_amplify && window.aws_amplify.Amplify) {
-                window.aws_amplify.Amplify.configure({
-                    Auth: {
-                        region: CONFIG.COGNITO_REGION,
-                        userPoolId: CONFIG.COGNITO_USER_POOL_ID,
-                        userPoolWebClientId: CONFIG.COGNITO_CLIENT_ID,
-                        mandatorySignIn: false,
-                        authenticationFlowType: 'USER_SRP_AUTH'
-                    }
-                });
-            } else {
-                console.error('AWS Amplify not loaded');
-            }
+            // Cognito User Poolの設定
+            cognitoUserPool = new AmazonCognitoIdentity.CognitoUserPool({
+                UserPoolId: CONFIG.COGNITO_USER_POOL_ID,
+                ClientId: CONFIG.COGNITO_CLIENT_ID
+            });
             
             initializeApp();
             setupEventListeners();
@@ -661,7 +656,11 @@
 
         async function handleLogout() {
             try {
-                await window.aws_amplify.Auth.signOut();
+                // Cognitoからログアウト
+                const cognitoUser = cognitoUserPool.getCurrentUser();
+                if (cognitoUser) {
+                    cognitoUser.signOut();
+                }
             } catch (error) {
                 console.error('Logout error:', error);
             }
@@ -708,39 +707,74 @@
 
         // 認証関数（Cognito実装）
         async function authenticateUser(email, password) {
-            try {
-                const user = await window.aws_amplify.Auth.signIn(email, password);
-                
-                // セッショントークンを取得
-                const session = await window.aws_amplify.Auth.currentSession();
-                const token = session.getIdToken().getJwtToken();
-                
-                return {
-                    success: true,
-                    user: {
-                        email: user.attributes.email,
-                        name: user.attributes.email.split('@')[0]
+            return new Promise((resolve) => {
+                const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+                    Username: email,
+                    Password: password,
+                });
+
+                const userData = {
+                    Username: email,
+                    Pool: cognitoUserPool,
+                };
+
+                const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+                cognitoUser.authenticateUser(authenticationDetails, {
+                    onSuccess: function (result) {
+                        const accessToken = result.getAccessToken().getJwtToken();
+                        const idToken = result.getIdToken().getJwtToken();
+                        
+                        resolve({
+                            success: true,
+                            user: {
+                                email: email,
+                                name: email.split('@')[0]
+                            },
+                            token: idToken
+                        });
                     },
-                    token: token
-                };
-            } catch (error) {
-                console.error('Authentication error:', error);
-                
-                let message = 'ログインに失敗しました';
-                if (error.code === 'UserNotFoundException') {
-                    message = 'ユーザーが見つかりません';
-                } else if (error.code === 'NotAuthorizedException') {
-                    message = 'メールアドレスまたはパスワードが正しくありません';
-                }
-                
-                return {
-                    success: false,
-                    message: message
-                };
-            }
+
+                    onFailure: function (err) {
+                        console.error('Authentication error:', err);
+                        
+                        let message = 'ログインに失敗しました';
+                        if (err.code === 'UserNotFoundException') {
+                            message = 'ユーザーが見つかりません';
+                        } else if (err.code === 'NotAuthorizedException') {
+                            message = 'メールアドレスまたはパスワードが正しくありません';
+                        } else if (err.code === 'UserNotConfirmedException') {
+                            message = 'メールアドレスの確認が完了していません';
+                        }
+                        
+                        resolve({
+                            success: false,
+                            message: message
+                        });
+                    },
+
+                    mfaRequired: function (codeDeliveryDetails) {
+                        // MFA対応が必要な場合
+                        resolve({
+                            success: false,
+                            message: 'MFA認証が必要です'
+                        });
+                    },
+
+                    newPasswordRequired: function (userAttributes, requiredAttributes) {
+                        // 新しいパスワードが必要な場合
+                        resolve({
+                            success: false,
+                            message: '新しいパスワードの設定が必要です'
+                        });
+                    }
+                });
+            });
         }
 
         function isTokenValid(token) {
+            if (token === 'demo-token') return true;
+            
             try {
                 // JWTトークンのデコード（簡易チェック）
                 const parts = token.split('.');
