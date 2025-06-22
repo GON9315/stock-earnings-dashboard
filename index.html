@@ -520,7 +520,7 @@
 
     <script>
         // Amplifyの設定
-        aws_amplify.Amplify.configure({
+        window.aws_amplify.Amplify.configure({
             Auth: {
                 region: CONFIG.COGNITO_REGION,
                 userPoolId: CONFIG.COGNITO_USER_POOL_ID,
@@ -657,7 +657,7 @@
 
         async function handleLogout() {
             try {
-                await aws_amplify.Auth.signOut();
+                await window.aws_amplify.Auth.signOut();
             } catch (error) {
                 console.error('Logout error:', error);
             }
@@ -705,10 +705,10 @@
         // 認証関数（Cognito実装）
         async function authenticateUser(email, password) {
             try {
-                const user = await aws_amplify.Auth.signIn(email, password);
+                const user = await window.aws_amplify.Auth.signIn(email, password);
                 
                 // セッショントークンを取得
-                const session = await aws_amplify.Auth.currentSession();
+                const session = await window.aws_amplify.Auth.currentSession();
                 const token = session.getIdToken().getJwtToken();
                 
                 return {
