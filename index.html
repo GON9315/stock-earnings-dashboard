@@ -517,7 +517,36 @@
     </div>
 
     <!-- AWS Cognito SDK -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/amazon-cognito-identity-js/6.3.12/amazon-cognito-identity.min.js"></script>
+    <script src="https://unpkg.com/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
+    <script>
+        // ライブラリ読み込み確認
+        if (typeof AmazonCognitoIdentity === 'undefined') {
+            console.error('Amazon Cognito Identity library failed to load');
+            // フォールバック: モック認証を使用
+            window.AmazonCognitoIdentity = {
+                CognitoUserPool: function() {
+                    return {
+                        getCurrentUser: function() { return null; }
+                    };
+                },
+                CognitoUser: function() {
+                    return {
+                        authenticateUser: function(details, callbacks) {
+                            // モック認証：デモ目的
+                            setTimeout(() => {
+                                callbacks.onFailure({
+                                    code: 'NetworkError',
+                                    message: 'Cognito library not loaded'
+                                });
+                            }, 1000);
+                        },
+                        signOut: function() {}
+                    };
+                },
+                AuthenticationDetails: function() {}
+            };
+        }
+    </script>
 
     <script>
         // 設定
@@ -551,11 +580,20 @@
 
         // 初期化
         document.addEventListener('DOMContentLoaded', function() {
-            // Cognito User Poolの設定
-            cognitoUserPool = new AmazonCognitoIdentity.CognitoUserPool({
-                UserPoolId: CONFIG.COGNITO_USER_POOL_ID,
-                ClientId: CONFIG.COGNITO_CLIENT_ID
-            });
+            // ライブラリ読み込み確認
+            if (typeof AmazonCognitoIdentity === 'undefined') {
+                console.error('Amazon Cognito Identity library not available');
+                showError('認証ライブラリの読み込みに失敗しました。デモ版をご利用ください。');
+                // 正規ログインボタンを無効化
+                document.getElementById('loginBtn').disabled = true;
+                document.getElementById('loginBtn').textContent = 'ライブラリ読み込みエラー';
+            } else {
+                // Cognito User Poolの設定
+                cognitoUserPool = new AmazonCognitoIdentity.CognitoUserPool({
+                    UserPoolId: CONFIG.COGNITO_USER_POOL_ID,
+                    ClientId: CONFIG.COGNITO_CLIENT_ID
+                });
+            }
             
             initializeApp();
             setupEventListeners();
@@ -707,6 +745,14 @@
 
         // 認証関数（Cognito実装）
         async function authenticateUser(email, password) {
+            // ライブラリが読み込まれていない場合のフォールバック
+            if (typeof AmazonCognitoIdentity === 'undefined') {
+                return {
+                    success: false,
+                    message: '認証ライブラリが利用できません。デモ版をお試しください。'
+                };
+            }
+
             return new Promise((resolve) => {
                 const authenticationDetails = new AmazonCognitoIdentity.AuthenticationDetails({
                     Username: email,
@@ -745,6 +791,8 @@
                             message = 'メールアドレスまたはパスワードが正しくありません';
                         } else if (err.code === 'UserNotConfirmedException') {
                             message = 'メールアドレスの確認が完了していません';
+                        } else if (err.code === 'NetworkError') {
+                            message = 'ネットワークエラーが発生しました。デモ版をお試しください。';
                         }
                         
                         resolve({
